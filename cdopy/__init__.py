@@ -67,11 +67,6 @@ class Result(Client):
         # Instantiate for visibility
         self.latest_results = None
 
-        # If the request is for a single item, just get it now
-        if self.single_item:
-            #self.request_params['params'] = None  # Apparently they don't like this
-            self.latest_results = self._request()
-
     def _request(self):
         self._latest_response = requests.get(**self.request_params)
         if self._latest_response.status_code == requests.codes.ok:
