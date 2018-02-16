@@ -8,5 +8,6 @@ setup(
     license='',
     author='Jason Gillman Jr.',
     author_email='',
-    description='A client for working with NOAA\'s Climate Data Online API'
+    description='A client for working with NOAA\'s Climate Data Online API',
+    install_requires=['requests']
 )
