@@ -19,17 +19,28 @@ class Client:
     """
     Base Client
     """
-    def __call__(self, endpoint, item=None, stash_data=True, **kwargs):
+    def __call__(self, endpoint, cdo_id=None, stash_data=True, **kwargs):
         """
         Return a result object
         """
-        return Result(token=self.token, api_version=self.api_version, endpoint=endpoint, item=item,
+        return Result(token=self.token, api_version=self.api_version, endpoint=endpoint, cdo_id=cdo_id,
                       stash_data=stash_data, **kwargs)
 
     def __init__(self, token, api_version=VERSION):
         self.token = token
         self.api_version = api_version
         self.base_uri = BASE_URI + self.api_version
+
+    def __getattr__(self, attrname):
+        if attrname in ENDPOINTS:
+            def rtemplate(endpoint=attrname, **kwargs):
+                return self(endpoint=endpoint, **kwargs)
+
+            return rtemplate
+
+        else:
+            raise AttributeError('{attrname} is not an endpoint or an attribute of the client object'.format(
+                attrname=attrname))
 
 
 class Result(Client):
@@ -39,7 +50,7 @@ class Result(Client):
     def __call__(self, **kwargs):
         pass
 
-    def __init__(self, token, api_version, endpoint, item, stash_data, **kwargs):
+    def __init__(self, token, api_version, endpoint, cdo_id, stash_data, **kwargs):
         # Call the parent constructor
         super().__init__(token=token, api_version=api_version)
         self.stash_data = stash_data  # If we want to store the results locally as they roll in
@@ -67,9 +78,9 @@ class Result(Client):
         }
         for k, v in kwargs.items():
             self.request_params['params'][k] = v
-        if item is not None:
+        if cdo_id is not None:
             self.single_item = True
-            self.request_params['url'] += '/' + str(item)
+            self.request_params['url'] += '/' + str(cdo_id)
 
         # Make the initial request
         self._request()
@@ -81,7 +92,7 @@ class Result(Client):
                 return_dict = self._latest_response.json()
                 if 'metadata' in return_dict:  # Dealing with a collection
                     count = return_dict['metadata']['resultset']['count']
-                    limit = self.request_params['params']['limit']  # Use this just in case some schmuck changes things..
+                    limit = self.request_params['params']['limit']  # Use this just in case some schmuck changes things
                     offset = return_dict['metadata']['resultset']['offset']
 
                     # Prep the next run if it happens
